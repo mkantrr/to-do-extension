@@ -16,7 +16,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "move": "yarn build && rm -rf ../static && mv build/static ../static"
   },
   "eslintConfig": {
     "extends": [

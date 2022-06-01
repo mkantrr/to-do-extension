@@ -1,19 +1,17 @@
+/*global chrome*/
 import React from 'react';
-import { ReactComponent as Logo } from './logo.svg';
 import './TodoApp.css';
 import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
+import FormControlLabel from '@material-ui/core/FormControlLabel';
+import Switch from '@material-ui/core/Switch';
 
-const logoStyle = {
-    fill: 'white',
-};
 
 class TodoApp extends React.Component {
     render() {
         return (
             <div className="App">
                 <header className="App-header">
-                    <Logo style={logoStyle} className="App-logo" alt="logo" />
                     <TodoPage />
                 </header>
             </div>
@@ -27,7 +25,12 @@ class TodoPage extends React.Component {
         this.handleChange = this.handleChange.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
         this.handleCompleted = this.handleCompleted.bind(this);
-        this.state = { listItems: [], textEntered: '' };
+        this.handleToggleDelete = this.handleToggleDelete.bind(this);
+        this.state = {
+            listItems: [],
+            textEntered: '',
+            toggleDelete: false
+        };
     }
 
     handleChange(event) {
@@ -70,12 +73,18 @@ class TodoPage extends React.Component {
        }
     }
 
+    handleToggleDelete(event) {
+        let newToggleDelete = this.state.toggleDelete ? false : true;
+        this.setState({ toggleDelete: newToggleDelete });
+    }
+
     render() {
         return (
             <div>
                 <h2>TO-DO List</h2>
                 <TodoList 
-                listItems={this.state.listItems} 
+                listItems={this.state.listItems}
+                toggleDelete={this.state.toggleDelete}
                 onCompleted={this.handleCompleted} /> 
                 <div id="space" />
                 <form onSubmit={this.handleSubmit}>
@@ -94,7 +103,15 @@ class TodoPage extends React.Component {
                             type="submit"> 
                             Add item #{this.state.listItems.length + 1}
                         </Button>
+                        <div id="space" />
+                        <FormControlLabel
+                            checked={this.state.toggleDelete} 
+                            control={<Switch checked={this.state.toggleDelete} onChange={this.handleToggleDelete} />}
+                            color = "secondary"
+                            label="Delete Mode"
+                        />
                     </div>
+                    <div id="space" />
                 </form>
             </div>
         );
@@ -109,13 +126,19 @@ class TodoList extends React.Component {
     }
 
     handleClick(event) {
-        this.props.onCompleted(event);
-        if (event.target.className === "textButton") {
-            for (let i=0; i < this.props.listItems.length; i++) {
-                if (this.props.listItems[i].id === event.target.id) {
-                    this.props.listItems[i].isDone
-                        ? event.target.style.setProperty("text-decoration", "line-through")
-                        : event.target.style.setProperty("text-decoration", "none");
+        if (this.props.toggleDelete === true) {
+            let itemToDelete = document.getElementById(event.target.id).parentElement;
+            itemToDelete.remove();
+        }
+        else {
+            this.props.onCompleted(event);
+            if (event.target.className === "textButton") {
+                for (let i=0; i < this.props.listItems.length; i++) {
+                    if (this.props.listItems[i].id === event.target.id) {
+                        this.props.listItems[i].isDone
+                            ? event.target.style.setProperty("text-decoration", "line-through")
+                            : event.target.style.setProperty("text-decoration", "none");
+                    }
                 }
             }
         }
