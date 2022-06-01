@@ -26,27 +26,28 @@ class TodoPage extends React.Component {
         this.handleSubmit = this.handleSubmit.bind(this);
         this.handleCompleted = this.handleCompleted.bind(this);
         this.handleToggleDelete = this.handleToggleDelete.bind(this);
-        chrome.storage.sync.get("state", (data) => {
-            if (data.state === null) {
-                this.state = {
-                    listItems: [],
-                    textEntered: '',
-                    toggleDelete: false
-                };
-            } else {
-                let newListItems = [...data.state.listItems];
-                let newTextEntered = data.state.textEntered;
-                let newToggleDelete = data.state.toggleDelete;
-                this.setState({
-                    listItems: newListItems,
-                    textEntered: newTextEntered,
-                    toggleDelete: newToggleDelete
-                });
-            }
+        this.handleOnLoad = this.handleOnLoad.bind(this);
+        this.handleSave = this.handleSave.bind(this);
+        this.state = {}
+        this.handleOnLoad();
+
+    }
+
+    handleOnLoad() {
+        chrome.storage.sync.get({ "state": ({ state }) }, (data) => {
+            let newListItems = [...data.state.listItems];
+            let newTextEntered = data.state.textEntered;
+            let newToggleDelete = data.state.toggleDelete;
+            this.setState({
+                listItems: newListItems,
+                textEntered: newTextEntered,
+                toggleDelete: newToggleDelete
+            });
         });
-        chrome.runtime.onSuspend.addListener(() => {
-            chrome.storage.sync.set({"state": this.state});
-        });
+    }
+
+    handleSave() {
+        chrome.storage.sync.set({ "state": this.state })
     }
 
     handleChange(event) {
