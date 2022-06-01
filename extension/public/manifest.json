@@ -4,6 +4,9 @@
   "description": "A simple extension for adding highlighted text or other things to to-do list",
   "version": "1.0",
   "manifest_version": 3,
+  "background": {
+      "service_worker": "background.js"
+  },
   "permissions": ["storage"],
   "action": {
     "default_popup": "index.html",
