@@ -1,4 +1,4 @@
-import handleSave from '../src/TodoApp.js';
+import TodoApp from '../src/TodoApp.js';
 
 let state = {
     listItems: [],

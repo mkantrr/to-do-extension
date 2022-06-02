@@ -28,13 +28,17 @@ class TodoPage extends React.Component {
         this.handleToggleDelete = this.handleToggleDelete.bind(this);
         this.handleOnLoad = this.handleOnLoad.bind(this);
         this.handleSave = this.handleSave.bind(this);
-        this.state = {}
+        this.state = {
+            listItems: [],
+            textEntered: '',
+            toggleDelete: false
+        }
         this.handleOnLoad();
 
     }
 
     handleOnLoad() {
-        chrome.storage.sync.get({ "state": ({ state }) }, (data) => {
+        chrome.storage.sync.get({ "state": ({ this.state }) } , (data) => {
             let newListItems = [...data.state.listItems];
             let newTextEntered = data.state.textEntered;
             let newToggleDelete = data.state.toggleDelete;
@@ -191,5 +195,5 @@ class TodoList extends React.Component {
 
 }
 
-
 export default TodoApp;
+
