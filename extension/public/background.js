@@ -4,11 +4,8 @@ let state = {
     toggleDelete: false
 }
 
-chrome.runtime.onStartup.addListener(() => {
-    chrome.storage.sync.get({ "state": ({ state }) }, (data) => {
-        chrome.storage.sync.set({ "state": data.state }, function() {
+chrome.runtime.onInstalled.addListener(() => {
+        chrome.storage.sync.set({ "state": state }, function() {
             console.log("Saved state as default empty state items");
         });
-    });
 });
-

@@ -26,6 +26,7 @@ class TodoPage extends React.Component {
         this.handleSubmit = this.handleSubmit.bind(this);
         this.handleCompleted = this.handleCompleted.bind(this);
         this.handleToggleDelete = this.handleToggleDelete.bind(this);
+        this.handleDelete = this.handleDelete.bind(this);
         this.state = {
             listItems: [],
             textEntered: '',
@@ -34,23 +35,34 @@ class TodoPage extends React.Component {
     }
 
     componentDidMount() {
-        let newListItems = [...this.props.state.listItems];
+        console.log(this.props.state);
+        console.log(this.props.state.listItems);
+        let newListItems = this.props.state.listItems;
         let newTextEntered = this.props.state.textEntered;
         let newToggleDelete = this.props.state.toggleDelete;
         this.setState({
             listItems: newListItems,
             textEntered: newTextEntered,
             toggleDelete: newToggleDelete
-        });
+        }); 
+        console.log("Component mounted");
+
     }
 
     componentDidUpdate() {
         let saveState = this.state;
-        chrome.storage.sync.get({ "state": ({ saveState }) }, (data) => {
-            chrome.storage.sync.set({ "state": data.state }, function() {
-                console.log("State has been updated, and has been saved to Chrome Storage Sync.");
-            });
+        chrome.storage.sync.set({ "state": saveState }, function() {
+            console.log("State has been updated, and has been saved to Chrome Storage Sync.");
+            console.log(saveState);
         });
+
+        if (!this.state.toggleDelete && this.state.listItems.length > 0) {
+            for (let item of this.state.listItems) {
+                item.isDone 
+                    ? document.getElementById(item.id).style.setProperty("text-decoration", "line-through")
+                    : document.getElementById(item.id).style.setProperty("text-decoration", "none");
+            }
+        }
     }
 
     handleChange(event) {
@@ -65,7 +77,7 @@ class TodoPage extends React.Component {
 
         let item = {
             textEntered: this.state.textEntered, 
-            id: (this.state.listItems.length + 1).toString(),
+            id: this.state.textEntered,
             isDone: false
         };
 
@@ -78,7 +90,7 @@ class TodoPage extends React.Component {
 
     handleCompleted(event) {
        if (event.target.className === "textButton") { 
-           let newListItems = [...this.state.listItems];
+           let newListItems = this.state.listItems;
             for (let i=0; i < newListItems.length; i++) {
                 if (newListItems[i].id === event.target.id) {
                     newListItems[i].isDone = newListItems[i].isDone ? false : true; 
@@ -98,6 +110,22 @@ class TodoPage extends React.Component {
         this.setState({ toggleDelete: newToggleDelete });
     }
 
+    handleDelete(event) {
+        if (event.target.className === "textButton") {
+            for (let i = 0; i < this.state.listItems.length; i++) {
+                if (this.state.listItems[i].id === event.target.id) {
+                    let newList1 = this.state.listItems.slice(0,i);
+                    let newList2 = this.state.listItems.slice(i+1,this.state.listItems.length);
+                    this.setState(state => ({
+                        listItems: newList1.concat(newList2)
+                    }));
+                }
+            }
+        }
+    }
+        
+
+
     render() {
         return (
             <div>
@@ -105,7 +133,8 @@ class TodoPage extends React.Component {
                 <TodoList 
                 listItems={this.state.listItems}
                 toggleDelete={this.state.toggleDelete}
-                onCompleted={this.handleCompleted} /> 
+                handleDelete={this.handleDelete} 
+                handleCompleted={this.handleCompleted} /> 
                 <div id="space" />
                 <form onSubmit={this.handleSubmit}>
                     <div>
@@ -146,12 +175,10 @@ class TodoList extends React.Component {
     }
 
     handleClick(event) {
-        if (this.props.toggleDelete === true) {
-            let itemToDelete = document.getElementById(event.target.id).parentElement;
-            itemToDelete.remove();
-        }
-        else {
-            this.props.onCompleted(event);
+        if (this.props.toggleDelete === true) {  
+            this.props.handleDelete(event); 
+        } else {
+            this.props.handleCompleted(event);
             if (event.target.className === "textButton") {
                 for (let i=0; i < this.props.listItems.length; i++) {
                     if (this.props.listItems[i].id === event.target.id) {

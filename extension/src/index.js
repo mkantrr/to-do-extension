@@ -5,7 +5,8 @@ import './index.css';
 import TodoApp from './TodoApp';
 import reportWebVitals from './reportWebVitals';
 
-chrome.storage.sync.get(null, function (data) {
+chrome.storage.sync.get("state", function (data) {
+    console.log(data);
     const root = ReactDOM.createRoot(document.getElementById('list'));
     root.render(
         <React.StrictMode>
