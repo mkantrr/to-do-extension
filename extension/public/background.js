@@ -1,5 +1,3 @@
-import TodoApp from '../src/TodoApp.js';
-
 let state = {
     listItems: [],
     textEntered: '',
@@ -14,6 +12,3 @@ chrome.runtime.onStartup.addListener(() => {
     });
 });
 
-chrome.runtime.onSuspend.addListener(() => {
-    handleSave();
-}

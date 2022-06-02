@@ -12,7 +12,7 @@ class TodoApp extends React.Component {
         return (
             <div className="App">
                 <header className="App-header">
-                    <TodoPage />
+                    <TodoPage {...this.props}/>
                 </header>
             </div>
         );
@@ -26,32 +26,31 @@ class TodoPage extends React.Component {
         this.handleSubmit = this.handleSubmit.bind(this);
         this.handleCompleted = this.handleCompleted.bind(this);
         this.handleToggleDelete = this.handleToggleDelete.bind(this);
-        this.handleOnLoad = this.handleOnLoad.bind(this);
-        this.handleSave = this.handleSave.bind(this);
         this.state = {
             listItems: [],
             textEntered: '',
             toggleDelete: false
         }
-        this.handleOnLoad();
-
     }
 
-    handleOnLoad() {
-        chrome.storage.sync.get({ "state": ({ this.state }) } , (data) => {
-            let newListItems = [...data.state.listItems];
-            let newTextEntered = data.state.textEntered;
-            let newToggleDelete = data.state.toggleDelete;
-            this.setState({
-                listItems: newListItems,
-                textEntered: newTextEntered,
-                toggleDelete: newToggleDelete
-            });
+    componentDidMount() {
+        let newListItems = [...this.props.state.listItems];
+        let newTextEntered = this.props.state.textEntered;
+        let newToggleDelete = this.props.state.toggleDelete;
+        this.setState({
+            listItems: newListItems,
+            textEntered: newTextEntered,
+            toggleDelete: newToggleDelete
         });
     }
 
-    handleSave() {
-        chrome.storage.sync.set({ "state": this.state })
+    componentDidUpdate() {
+        let saveState = this.state;
+        chrome.storage.sync.get({ "state": ({ saveState }) }, (data) => {
+            chrome.storage.sync.set({ "state": data.state }, function() {
+                console.log("State has been updated, and has been saved to Chrome Storage Sync.");
+            });
+        });
     }
 
     handleChange(event) {
