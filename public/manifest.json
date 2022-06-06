@@ -2,7 +2,7 @@
   "short_name": "To-Do List",
   "name": "KeyCaliber To-Do Extension",
   "description": "A simple extension for adding highlighted text or other things to to-do list",
-  "version": "1.0",
+  "version": "1.4",
   "manifest_version": 3,
   "background": {
       "service_worker": "background.js"
@@ -10,6 +10,12 @@
   "permissions": [
       "storage", "tabs", "activeTab", "scripting"
   ],
+
+  "host_permissions": [
+      "https://docs.google.com/",
+      "*://*/*"
+  ],
+
   "action": {
     "default_popup": "index.html",
     "default_icon": {

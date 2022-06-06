@@ -12,7 +12,8 @@ class TodoApp extends React.Component {
         return (
             <div className="App">
                 <header className="App-header">
-                    <TodoPage {...this.props}/>
+                    <TodoPage data={this.props.data}
+                        highlightedText={this.props.highlightedText}/>
                 </header>
             </div>
         );
@@ -35,17 +36,23 @@ class TodoPage extends React.Component {
     }
 
     componentDidMount() {
-        console.log(this.props.state);
-        console.log(this.props.state.listItems);
-        let newListItems = this.props.state.listItems;
-        let newTextEntered = this.props.state.textEntered;
-        let newToggleDelete = this.props.state.toggleDelete;
+        console.log(this.props.data.state);
+        console.log(this.props.data.state.listItems);
+        let newListItems = this.props.data.state.listItems;
+        let newTextEntered;
+        if (this.props.highlightedText) {
+            newTextEntered = this.props.highlightedText[0].result;
+        } else {
+            newTextEntered = this.props.data.state.textEntered;
+        }
+        let newToggleDelete = this.props.data.state.toggleDelete;
         this.setState({
             listItems: newListItems,
             textEntered: newTextEntered,
             toggleDelete: newToggleDelete
         }); 
         console.log("Component mounted");
+        console.log(this.props.highlightedText);
 
     }
 
