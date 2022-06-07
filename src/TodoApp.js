@@ -58,9 +58,9 @@ class TodoPage extends React.Component {
 
     componentDidUpdate() {
         let saveState = this.state;
-        chrome.storage.sync.set({ "state": saveState }, function() {
+        chrome.storage.sync.set({ "state": saveState }, function(data) {
             console.log("State has been updated, and has been saved to Chrome Storage Sync.");
-            console.log(saveState);
+            console.log(data);
         });
 
         if (!this.state.toggleDelete && this.state.listItems.length > 0) {
@@ -131,8 +131,6 @@ class TodoPage extends React.Component {
         }
     }
         
-
-
     render() {
         return (
             <div>
@@ -154,13 +152,14 @@ class TodoPage extends React.Component {
                     <div id="space" />
                     <div>
                         <Button 
+                            className="addButton" 
                             variant="outlined" 
                             color="primary" 
                             type="submit"> 
                             Add item #{this.state.listItems.length + 1}
                         </Button>
-                        <div id="space" />
                         <FormControlLabel
+                            className="deleteButton" 
                             checked={this.state.toggleDelete} 
                             control={<Switch checked={this.state.toggleDelete} onChange={this.handleToggleDelete} />}
                             color = "secondary"
@@ -219,7 +218,7 @@ class TodoList extends React.Component {
                         variant="outlined" 
                         color="secondary" 
                         onClick={this.handleClick}>
-                        Sort completed items
+                        Sort
                     </Button>
                 </div>
             </div>

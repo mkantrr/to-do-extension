@@ -35,6 +35,16 @@ li {
 
 }
 
+.addButton {
+    padding-right: 20px;
+
+}
+
+.deleteButton {
+    padding-left: 20px;
+
+}
+
 #space {
     margin-bottom: 15px
 
