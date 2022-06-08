@@ -5,11 +5,11 @@ import './index.css';
 import TodoApp from './TodoApp';
 import reportWebVitals from './reportWebVitals';
 
-
-chrome.storage.sync.get("state", function (data) {
-    console.log(data);
-    chrome.tabs.query({ active: true, currentWindow: true, lastFocusedWindow: true }, (tabs) => {
+//grabs active tab when popup launched
+chrome.tabs.query({ active: true, currentWindow: true, lastFocusedWindow: true }, (tabs) => {
         console.log(tabs[0]);
+        //finds selected/highlighted text on active tab and returns it in result,
+        //passing it to callback function as result
         chrome.scripting.executeScript({
             target: { tabId: tabs[0].id },
             func: () => {
@@ -28,16 +28,17 @@ chrome.storage.sync.get("state", function (data) {
                 return text;
             }
         }, (result) => {
+            //full React render of extension wrapped in callbackof highlighted text,
+            //passes result to TodoApp to use in popup
             const root = ReactDOM.createRoot(document.getElementById('list'));
             root.render(
                 <React.StrictMode>
-                    <TodoApp data={data} 
+                    <TodoApp
                         highlightedText={result}/>
                 </React.StrictMode>
             );
         });
     });
-});
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))

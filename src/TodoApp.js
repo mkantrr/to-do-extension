@@ -1,231 +1,249 @@
 /*global chrome*/
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import './TodoApp.css';
 import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Switch from '@material-ui/core/Switch';
 
-
-class TodoApp extends React.Component {
-    render() {
-        return (
-            <div className="App">
-                <header className="App-header">
-                    <TodoPage data={this.props.data}
-                        highlightedText={this.props.highlightedText}/>
-                </header>
-            </div>
-        );
-    }
+/*
+ * Top level React functional component: takes in highlighted text
+ * from current tab as a prop and gives TodoPage the highlighted text
+ * as a prop. Also uses a div and header component for CSS styling
+ */
+function TodoApp(props) {
+    return (
+        <div className="App">
+            <header className="App-header">
+                <TodoPage
+                    highlightedText={props.highlightedText}/>
+            </header>
+        </div>
+    );
 }
 
-class TodoPage extends React.Component {
-    constructor(props) {
-        super(props);
-        this.handleChange = this.handleChange.bind(this);
-        this.handleSubmit = this.handleSubmit.bind(this);
-        this.handleCompleted = this.handleCompleted.bind(this);
-        this.handleToggleDelete = this.handleToggleDelete.bind(this);
-        this.handleDelete = this.handleDelete.bind(this);
-        this.state = {
-            listItems: [],
-            textEntered: '',
-            toggleDelete: false
-        }
-    }
+/*
+ * Functional React component that does all of the interactive backend.
+ * Stores functions and variables for handling changes on the extension popup.
+ * Also uses chrome.storage.sync to sync the state of the extension between
+ * popup sessions.
+ */
 
-    componentDidMount() {
-        console.log(this.props.data.state);
-        console.log(this.props.data.state.listItems);
-        let newListItems = this.props.data.state.listItems;
-        let newTextEntered;
-        if (this.props.highlightedText) {
-            newTextEntered = this.props.highlightedText[0].result;
-        } else {
-            newTextEntered = this.props.data.state.textEntered;
-        }
-        let newToggleDelete = this.props.data.state.toggleDelete;
-        this.setState({
-            listItems: newListItems,
-            textEntered: newTextEntered,
-            toggleDelete: newToggleDelete
-        }); 
+function TodoPage(props) {
+    //initalize state variables
+    const [listItems, setListItems] = useState([]);
+    const [textEntered, setTextEntered] = useState('');
+    const [toggleDelete, setToggleDelete] = useState(false); 
+    const [sorted, setSorted] = useState(true);
+
+    useEffect(() => {  
+        //restore state variables from values in chrome StorageArea when
+        //new popup session is created
+        console.log(props.highlightedText);
+        chrome.storage.sync.get("state", function(data) {
+            setListItems(property => property = data.state.listItems);
+            if (props.highlightedText[0].result) {
+                setTextEntered(property => property = props.highlightedText[0].result);
+            } else {
+                setTextEntered(property => property = data.state.textEntered);
+            }
+            setToggleDelete(property => property = data.state.toggleDelete);
+            setSorted(property => property = data.state.sorted);
+            console.log("Fetched state"); 
+        });
         console.log("Component mounted");
-        console.log(this.props.highlightedText);
+    },[props.highlightedText]);
 
-    }
-
-    componentDidUpdate() {
-        let saveState = this.state;
+    useEffect(() => {
+        //store state properties in chrome StorageArea when
+        //anything in state is updated
+        let saveState = {
+            listItems: listItems,
+            textEntered: textEntered,
+            toggleDelete: toggleDelete,
+            sorted: sorted
+        }
         chrome.storage.sync.set({ "state": saveState }, function(data) {
             console.log("State has been updated, and has been saved to Chrome Storage Sync.");
-            console.log(data);
         });
 
-        if (!this.state.toggleDelete && this.state.listItems.length > 0) {
-            for (let item of this.state.listItems) {
+        //restores strikethrough text/isDone styling to list on new session
+        //redundant when updating styling within current popup session
+        if (!toggleDelete && listItems.length > 0) {
+            for (let item of listItems) {
                 item.isDone 
                     ? document.getElementById(item.id).style.setProperty("text-decoration", "line-through")
                     : document.getElementById(item.id).style.setProperty("text-decoration", "none");
             }
         }
+        //restores sorted state variable to inital state
+        setSorted(true);
+    }, [listItems, textEntered, toggleDelete, sorted]);
+
+    function handleChange(event) {
+        //sync textEntered state variable with typed text from user
+        setTextEntered(event.target.value);
     }
 
-    handleChange(event) {
-        this.setState({ textEntered: event.target.value });
-    }
-
-    handleSubmit(event) {
+    function handleSubmit(event) {
+        //save new list item typed into text field into list items
         event.preventDefault();
-        if (this.state.textEntered.length === 0) {
+        if (textEntered.length === 0) {
             return;
         }
 
         let item = {
-            textEntered: this.state.textEntered, 
-            id: this.state.textEntered,
+            textEntered: textEntered, 
+            id: textEntered,
             isDone: false
         };
 
-        this.setState(state => ({
-            listItems: this.state.listItems.concat(item), 
-            textEntered: ''
-        }));
-
+        setListItems(listItems.concat(item));
+        //sets text field value back to empty
+        setTextEntered('');
     }
 
-    handleCompleted(event) {
-       if (event.target.className === "textButton") { 
-           let newListItems = this.state.listItems;
+    function handleCompleted(event) {
+        //find event target in listItems
+        if (event.target.className === "textButton") { 
+            let newListItems = listItems;
             for (let i=0; i < newListItems.length; i++) {
                 if (newListItems[i].id === event.target.id) {
+                    //invert isDone property of event target
                     newListItems[i].isDone = newListItems[i].isDone ? false : true; 
-                    this.setState({ listItems: newListItems });
+                    //save new properties ot list to listItems state variable
+                    setListItems(newListItems);
                 }
             }
-       } else {
-           this.setState(state => ({
-               listItems: this.state.listItems.sort(
-                   function(a,b){return a.isDone - b.isDone})
-           }));
-       }
+        } else { 
+            //logic to sort list
+            let newListItems = listItems.sort(
+                function(a,b){return a.isDone - b.isDone});
+            setListItems(newListItems);
+            //activate effect hook to update list as sorted
+            setSorted(false);
+        }
     }
 
-    handleToggleDelete(event) {
-        let newToggleDelete = this.state.toggleDelete ? false : true;
-        this.setState({ toggleDelete: newToggleDelete });
+    //handles logic to change in/out of delete mode and storing in state
+    function handleToggleDelete(event) {
+        let newToggleDelete = toggleDelete ? false : true;
+        setToggleDelete(newToggleDelete);
     }
 
-    handleDelete(event) {
+    function handleDelete(event) {
+        //logic to find event target and remove it from lisItems, saving
+        //it in state
         if (event.target.className === "textButton") {
-            for (let i = 0; i < this.state.listItems.length; i++) {
-                if (this.state.listItems[i].id === event.target.id) {
-                    let newList1 = this.state.listItems.slice(0,i);
-                    let newList2 = this.state.listItems.slice(i+1,this.state.listItems.length);
-                    this.setState(state => ({
-                        listItems: newList1.concat(newList2)
-                    }));
+            for (let i = 0; i < listItems.length; i++) {
+                if (listItems[i].id === event.target.id) {
+                    let newList1 = listItems.slice(0,i);
+                    let newList2 = listItems.slice(i+1,listItems.length);
+                    setListItems(newList1.concat(newList2));
                 }
             }
         }
     }
-        
-    render() {
-        return (
-            <div>
-                <h2>TO-DO List</h2>
-                <TodoList 
-                listItems={this.state.listItems}
-                toggleDelete={this.state.toggleDelete}
-                handleDelete={this.handleDelete} 
-                handleCompleted={this.handleCompleted} /> 
+    //renders TodoPage, passing variables and functions to TodoList component
+    return (
+        <div>
+            <h2>TO-DO List</h2>
+            <TodoList 
+                listItems={listItems}
+                toggleDelete={toggleDelete}
+                handleDelete={handleDelete} 
+                handleCompleted={handleCompleted} 
+                sorted={sorted}
+                setSorted={setSorted}/> 
+            <div id="space" />
+            <form onSubmit={handleSubmit}>
+                <div>
+                    <TextField 
+                        variant="outlined" 
+                        label="Enter an item"
+                        onChange={handleChange}
+                        value={textEntered} />
+                </div>
                 <div id="space" />
-                <form onSubmit={this.handleSubmit}>
-                    <div>
-                        <TextField 
-                            variant="outlined" 
-                            label="Enter an item"
-                            onChange={this.handleChange} 
-                            value={this.state.textEntered} />
-                    </div>
-                    <div id="space" />
-                    <div>
-                        <Button 
-                            className="addButton" 
-                            variant="outlined" 
-                            color="primary" 
-                            type="submit"> 
-                            Add item #{this.state.listItems.length + 1}
-                        </Button>
-                        <FormControlLabel
-                            className="deleteButton" 
-                            checked={this.state.toggleDelete} 
-                            control={<Switch checked={this.state.toggleDelete} onChange={this.handleToggleDelete} />}
-                            color = "secondary"
-                            label="Delete Mode"
-                        />
-                    </div>
-                    <div id="space" />
-                </form>
-            </div>
-        );
-    }                    
+                <div>
+                    <Button 
+                        className="addButton" 
+                        variant="outlined" 
+                        color="primary" 
+                        type="submit"> 
+                        Add item #{listItems.length + 1}
+                    </Button>
+                    <FormControlLabel
+                        className="deleteButton" 
+                        checked={toggleDelete} 
+                        control={<Switch checked={toggleDelete} onChange={handleToggleDelete} />}
+                        color = "secondary"
+                        label="Delete Mode"
+                    />
+                </div>
+                <div id="space" />
+            </form>
+        </div>
+    );
 }
 
-class TodoList extends React.Component {
-    constructor(props) {
-        super(props);
-        this.handleClick = this.handleClick.bind(this);
+/*
+ * React component used to store data for how the list is formatted and looks.
+ * Also has the sort button that references prop functions to sort through the list.
+ */
+function TodoList(props) {
 
-    }
-
-    handleClick(event) {
-        if (this.props.toggleDelete === true) {  
-            this.props.handleDelete(event); 
+    function handleClick(event) {
+        console.log(props.toggleDelete);
+        //top level branch for handling click on item in list if in delete mode
+        if (props.toggleDelete === true) {  
+            props.handleDelete(event); 
         } else {
-            this.props.handleCompleted(event);
+            //top level branch for handling click on item in life if not in delete mode,
+            //setting style to strikethrough text for event target to mark as completed
+            props.handleCompleted(event);
             if (event.target.className === "textButton") {
-                for (let i=0; i < this.props.listItems.length; i++) {
-                    if (this.props.listItems[i].id === event.target.id) {
-                        this.props.listItems[i].isDone
+                for (let i=0; i < props.listItems.length; i++) {
+                    if (props.listItems[i].id === event.target.id) {
+                        props.listItems[i].isDone
                             ? event.target.style.setProperty("text-decoration", "line-through")
                             : event.target.style.setProperty("text-decoration", "none");
                     }
                 }
             }
+            //sets sorted state variable to false to activate useEffect hook to update state
+            //and StorageArea
+            props.setSorted(false);
         }
     }
-
-    render() {
-        return (
+    //renders to do list and list interactivity, as well as the sort button
+    return (
+        <div>
+            <ul>
+                {props.listItems.map(item => (
+                    <li key={item.id}>
+                        <button 
+                            className="textButton" 
+                            id={item.id} 
+                            onClick={handleClick}>
+                            {item.textEntered} 
+                        </button>
+                    </li>
+                ))}
+            </ul> 
+            <div id="space" />
             <div>
-                <ul>
-                    {this.props.listItems.map(item => (
-                        <li key={item.id}>
-                            <button 
-                                className="textButton" 
-                                id={item.id} 
-                                onClick={this.handleClick}>
-                                {item.textEntered} 
-                            </button>
-                        </li>
-                    ))}
-                </ul> 
-                <div id="space" />
-                <div>
-                    <Button 
-                        variant="outlined" 
-                        color="secondary" 
-                        onClick={this.handleClick}>
-                        Sort
-                    </Button>
-                </div>
+                <Button 
+                    variant="outlined" 
+                    color="secondary"  
+                    onClick={handleClick}>
+                    Sort
+                </Button>
             </div>
-        )
-    }
-
+        </div>
+    );
 }
 
+//exports to index.js
 export default TodoApp;
 
