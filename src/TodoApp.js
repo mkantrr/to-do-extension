@@ -6,6 +6,24 @@ import Button from '@material-ui/core/Button';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Switch from '@material-ui/core/Switch';
 
+
+//function to find selected text on any given html
+let getSelectionText = () => {
+    let text = "";
+    let activeEl = document.activeElement;
+    let activeElTagName = activeEl ? activeEl.tagName.toLowerCase() : null;
+    if (
+        (activeElTagName === "textarea") || ((activeElTagName === "input" &&
+            /^(?:text|search|password|tel|url)$/i.test(activeEl.type)) &&
+            (typeof activeEl.selectionStart == "number"))
+    ) {
+        text = activeEl.value.slice(activeEl.selectionStart, activeEl.selectionEnd);
+    } else if (window.getSelection) {
+        text = window.getSelection().toString();
+    }
+    return text;
+}
+
 /*
  * Top level React functional component: takes in highlighted text
  * from current tab as a prop and gives TodoPage the highlighted text
@@ -15,8 +33,7 @@ function TodoApp(props) {
     return (
         <div className="App">
             <header className="App-header">
-                <TodoPage
-                    highlightedText={props.highlightedText}/>
+                <TodoPage /> 
             </header>
         </div>
     );
@@ -36,23 +53,34 @@ function TodoPage(props) {
     const [toggleDelete, setToggleDelete] = useState(false); 
     const [sorted, setSorted] = useState(true);
 
-    useEffect(() => {  
-        //restore state variables from values in chrome StorageArea when
-        //new popup session is created
-        console.log(props.highlightedText);
-        chrome.storage.sync.get("state", function(data) {
-            setListItems(property => property = data.state.listItems);
-            if (props.highlightedText[0].result) {
-                setTextEntered(property => property = props.highlightedText[0].result);
-            } else {
-                setTextEntered(property => property = data.state.textEntered);
-            }
-            setToggleDelete(property => property = data.state.toggleDelete);
-            setSorted(property => property = data.state.sorted);
-            console.log("Fetched state"); 
+    useEffect(() => { 
+        //grabs active tab when popup launched
+        chrome.tabs.query({ active: true, currentWindow: true, lastFocusedWindow: true }, (tabs) => {
+            console.log(tabs[0]);
+            //finds selected/highlighted text on active tab and returns it in result,
+            //passing it to callback function as result
+            chrome.scripting.executeScript({
+                target: { tabId: tabs[0].id },
+                func: getSelectionText
+            }, (result) => {
+                //restore state variables from values in chrome StorageArea when
+                //new popup session is created
+                console.log(result);
+                chrome.storage.sync.get("state", function(data) {
+                    setListItems(property => property = data.state.listItems);
+                    if (result[0].result) {
+                        setTextEntered(property => property = result[0].result);
+                    } else {
+                        setTextEntered(property => property = data.state.textEntered);
+                    }
+                    setToggleDelete(property => property = data.state.toggleDelete);
+                    setSorted(property => property = data.state.sorted);
+                    console.log("Fetched state"); 
+                });
+            });
         });
         console.log("Component mounted");
-    },[props.highlightedText]);
+    },[]);
 
     useEffect(() => {
         //store state properties in chrome StorageArea when
