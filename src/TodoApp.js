@@ -6,7 +6,6 @@ import Button from '@material-ui/core/Button';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Switch from '@material-ui/core/Switch';
 
-
 //function to find selected text on any given html
 let getSelectionText = () => {
     let text = "";
@@ -53,20 +52,19 @@ function TodoPage(props) {
     const [toggleDelete, setToggleDelete] = useState(false); 
     const [sorted, setSorted] = useState(true);
 
-    useEffect(() => { 
-        //grabs active tab when popup launched
-        chrome.tabs.query({ active: true, currentWindow: true, lastFocusedWindow: true }, (tabs) => {
-            console.log(tabs[0]);
-            //finds selected/highlighted text on active tab and returns it in result,
-            //passing it to callback function as result
-            chrome.scripting.executeScript({
-                target: { tabId: tabs[0].id },
-                func: getSelectionText
-            }, (result) => {
-                //restore state variables from values in chrome StorageArea when
-                //new popup session is created
-                console.log(result);
-                chrome.storage.sync.get("state", function(data) {
+    useEffect(() => {  
+        //restore state variables from values in chrome StorageArea when
+        //new popup session is created
+        chrome.storage.sync.get("state", function(data) {
+            //grabs active tab when popup launched
+            chrome.tabs.query({ active: true, currentWindow: true, lastFocusedWindow: true }, (tabs) => {
+                console.log(tabs[0]);
+                //finds selected/highlighted text on active tab and returns it in result,
+                //passing it to callback function as result
+                chrome.scripting.executeScript({
+                    target: { tabId: tabs[0].id },
+                    func: getSelectionText
+                }, (result) => {
                     setListItems(property => property = data.state.listItems);
                     if (result[0].result) {
                         setTextEntered(property => property = result[0].result);
@@ -78,7 +76,7 @@ function TodoPage(props) {
                     console.log("Fetched state"); 
                 });
             });
-        });
+        }); 
         console.log("Component mounted");
     },[]);
 
@@ -97,12 +95,10 @@ function TodoPage(props) {
 
         //restores strikethrough text/isDone styling to list on new session
         //redundant when updating styling within current popup session
-        if (!toggleDelete && listItems.length > 0) {
-            for (let item of listItems) {
-                item.isDone 
-                    ? document.getElementById(item.id).style.setProperty("text-decoration", "line-through")
-                    : document.getElementById(item.id).style.setProperty("text-decoration", "none");
-            }
+        for (let item of listItems) {
+            item.isDone 
+                ? document.getElementById(item.id).style.setProperty("text-decoration", "line-through")
+                : document.getElementById(item.id).style.setProperty("text-decoration", "none");
         }
         //restores sorted state variable to inital state
         setSorted(true);
@@ -222,7 +218,6 @@ function TodoPage(props) {
 function TodoList(props) {
 
     function handleClick(event) {
-        console.log(props.toggleDelete);
         //top level branch for handling click on item in list if in delete mode
         if (props.toggleDelete === true) {  
             props.handleDelete(event); 
