@@ -16,7 +16,9 @@ let getSelectionText = () => {
             /^(?:text|search|password|tel|url)$/i.test(activeEl.type)) &&
             (typeof activeEl.selectionStart == "number"))
     ) {
-        text = activeEl.value.slice(activeEl.selectionStart, activeEl.selectionEnd);
+        text = activeEl.value.slice(
+        activeEl.selectionStart, 
+        activeEl.selectionEnd);
     } else if (window.getSelection) {
         text = window.getSelection().toString();
     }
@@ -57,25 +59,28 @@ function TodoPage(props) {
         //new popup session is created
         chrome.storage.sync.get("state", function(data) {
             //grabs active tab when popup launched
-            chrome.tabs.query({ active: true, currentWindow: true, lastFocusedWindow: true }, (tabs) => {
-                console.log(tabs[0]);
-                //finds selected/highlighted text on active tab and returns it in result,
-                //passing it to callback function as result
-                chrome.scripting.executeScript({
-                    target: { tabId: tabs[0].id },
-                    func: getSelectionText
-                }, (result) => {
-                    setListItems(property => property = data.state.listItems);
-                    if (result[0].result) {
-                        setTextEntered(property => property = result[0].result);
-                    } else {
-                        setTextEntered(property => property = data.state.textEntered);
-                    }
-                    setToggleDelete(property => property = data.state.toggleDelete);
-                    setSorted(property => property = data.state.sorted);
-                    console.log("Fetched state"); 
+            chrome.tabs.query({ 
+                active: true, 
+                currentWindow: true, 
+                lastFocusedWindow: true }, (tabs) => {
+                    console.log(tabs[0]);
+                    //finds selected/highlighted text on active tab and returns it in result,
+                    //passing it to callback function as result
+                    chrome.scripting.executeScript({
+                        target: { tabId: tabs[0].id },
+                        func: getSelectionText
+                    }, (result) => {
+                        setListItems(property => property = data.state.listItems);
+                        if (result[0].result) {
+                            setTextEntered(property => property = result[0].result);
+                        } else {
+                            setTextEntered(property => property = data.state.textEntered);
+                        }
+                        setToggleDelete(property => property = data.state.toggleDelete);
+                        setSorted(property => property = data.state.sorted);
+                        console.log("Fetched state"); 
+                    });
                 });
-            });
         }); 
         console.log("Component mounted");
     },[]);
